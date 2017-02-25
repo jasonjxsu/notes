@@ -1,0 +1,138 @@
+Spring框架四大原则：
+	使用POJO进行轻量级和最小侵入式开发
+	通过依赖注入和基于接口编程实现松耦合
+	通过AOP和默认习惯进行声明式编程
+	使用AOP和模板减少模式化代码
+
+Java配置是通过@Configuration和@Bean来实现的。
+@Configuration声明当前类是一个配置类，相当于一个Spring配置的XML文件。
+@Bean注解在方法上，声明当前方法的返回值为一个Bean。
+(@Configuration一般配合@ComponentScan来使用，用于扫描Bean)
+
+全局配置使用Java配置(如数据库相关配置，MVC配置)，业务Bean的配置使用注解配置(@Service, @Component,
+@Repository, @Controller)
+
+可使用AnnotationConfigApplicationContext作为Spring容器，接受一个配置类作为参数(p21)
+
+当容器中存在多个 Bean 的类型与需要注入的相同时，注入将不能执行，我们可以给@Autowired 增加一个候选值，做法是在 @Autowired 后面增加一个 @Qualifier标注，提供一个 String 类型的值作为候选的 Bean 的名字，如：
+@Autowired(required=false) //注入不成功也不会发生异常
+@Qualifier("AImpl")
+
+@Profile可以为不同的环境配置一套不同的配置(eg: @Profile("dev"),
+@Profile("prod"))，然后配合AnnotationConfigApplicationContext.getEnvironment().setActiveProfiles("prod")使用。
+
+@EnableWebMvc开启Web
+MVC的配置支持。此注解会开启一些默认配置，如ViewResolver或MessageConverter等。
+此注解一般放置在配置类头上，如：
+@Configuration
+@EnableWebMvc
+@ComponentScan("...")
+public class AppMvcConfig {...}
+
+(p80)
+一般使用AnnotationConfigWebApplicationContext来注册WebMvc的配置类。如：
+AnnotationConfigWebApplicationContext ctx = new
+AnnotationConfigWebApplicationContext();
+ctx.register(AppMvcConfig.class);
+
+WebApplicationInitializer是Spring提供用来配置Servlet3.0+配置的接口，从而实现了替代web.xml的位置。实现此接口将会自动被SpringServletContainerInitializer(用来启动Servlet3.0容器)获取到。
+
+集成测试类的注解一般有：
+@RunWith(SpringJUnit4ClassRunner.class) // 在Junit环境下提供Spring集成测试功能
+@ContextConfiguration(classes = {TestConfig.class}} // 加载配置类
+@ActiveProfile("prod") // 选择要测试的运行环境
+
+MVC只是对于三层架构(展现曾，应用层，数据访问层)中的展现层
+应用层对应Service层，数据访问层对应DAO层
+
+SpringBoot的页面习惯放置在src/main/resources下
+
+(p82)
+Spring MVC常用注解
+@Controller, @RequestMapping, @ResponseBody, @RequestBody, @PathVariable,
+@RestController(@ResponseBody和@Controller的合体)
+
+(p87)
+Spring
+MVC的定制配置需要我们的配置类继承一个WebMvcConfigurationAdapter类，并在此类使用@EnableMebMvc注解，来开启对Spring
+MVC的配置支持，这样我们就可以重写这个类的方法，完成我们的常用配置：
+静态资源，拦截器，@ControllerAdvisor
+(WebMvcConfigurerAdapter和WebMvcConfigurationSupport的关系是？)
+
+(p106)
+服务器端推送技术(可使用基于SSE的服务器端推送或基于Servlet3.0+的异步方法特性)
+
+(p113)
+测试Spring MVC通常需要一些Servle相关的模拟对象：
+MockMVC, MockHttpServletRequest, MockHttpServletResponse, MockHttpSession等
+
+Spring MVC的集成测试注解一般有：
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {WebAppConfig.class})
+@WebAppConfiguration("src/main/resources") //
+用来声明加载的ApplicationContext是一个WebApplicationContext。它的属性指定的是web资源的位置，默认是src/main/webapp
+
+@SpringBootApplication注解是Spring
+Boot项目和核心注解，主要的目的是开启自动配置。
+若不使用@SpringBootApplication，可以在入口类上直接使用@Configuration,
+@EnableAutoConfiguration, @ComponentScan代替。
+
+Spring
+Boot会自动扫描@SpringBootApplication所在类的同级包以及下级包里的Bean，所以建议入口类放置的位置在groupId + arctifactId组合的包名下。
+
+(附录A.3)
+Spring Boot常用properties配置列表
+
+在application.properties文件里配置的属性，可以在Java代码里使用@Value注解把值注入类属性。
+eg: @Value("${book.name}")
+也可以用@ConfigurationProperties将properties属性和一个Bean及其属性关联起来。(注意@ConfigurationProperties要和@Component联合使用?)
+然后在具体要使用PropertiesBean的类中使用@EnableConfigurationProperties注解把PropertiesBean类引入，如：@EnableConfigurationProperties(MyPropertiesBean.class)，然后用@Autowired注入。(p159)
+
+Spring Boot自动配置原理：
+Spring Boot会检查classpath里引入了哪些jar依赖，然后通过条件配置(@Conditional)，去加载对应依赖的配置类。
+
+Spring
+Data是一个伞型项目，包含了大量关系型数据库和非关系型数据库的数据访问解决方案。
+Spring Data包括的子项目：
+Spring Data JPA, Spring Data MongoDB, Spring Data Redis, etc.
+
+Spring
+Data为我们使用统一的API对上述的数据存储技术进行数据访问操作提供了支持。这是Spring通过提供Spring
+Data Commons项目来实现的，它是上述各种Spring Data项目的依赖。
+
+Spirng Data Commons的一个重要概念：Spring Data Repository抽象。使用Spring Data
+Repository可以极大地减少数据访问层的代码。Spring Data
+Repository抽象的根接口是Repository接口。其他实用子接口：CrudRepository,
+PagingAndSortingRepository, etc.
+
+不同的数据访问技术也提供了不同的Repository，如Spring Data
+JPA有JpaRepository，Spring Data MongoDB有MongoRepository。
+
+在Spring环境中，可以通过@EnableJpaRepositories注解来开启Spring Data
+JPA的支持，@EnableJpaRepositories接收的value参数用来扫描数据访问层所在包下的数据访问的接口定义。如：
+@Configuration
+@EnableJpaRepositories("com.demo.repos")
+public class JpaConfiguration {...} // JPA配置类
+
+(p250)
+JpaRepository提供的查询关键字：findBy, find, read, readBy, query, qureyBy,
+get, getBy, Like, and, etc.
+
+Spring
+Boot提供了一个初始化数据的功能：放置在类路径下的schema.sql文件会自动用来初始化表结构；放置在类路径下的data.sql会自动用来填充表数据。
+
+applocation.properties的spring.data.rest.bash-path属性能指定访问项目的根路径。
+
+Spring提供了一个@EnableTransactionManagement注解在配置类上来开启声明式事务的支持，然后Spring容器会自动扫描注解@Transactional的方法和类。
+(在Spring Boot环境下不需要显式声明@EnableTransactionManagement注解，因为在DataSourceTransactionManagement里已经显式声明了此注解。)
+
+(p300)
+@Transactional不仅可以注解在方法上，也可以注解在类上。当注解在类上的时候意味着此类的所以public方法都是开启事务的。如果类级别和方法级别同时使用了@Transactional注解，则使用在类级别的注解会重载方法级别的注解。
+(有问题，应该是方法级别的注解会重载类级别的注解?)
+
+Spring Security配置(非Spring Boot环境)
+我们只需让自己的Initializer类继承AbstractSecurityWebApplicationInitializer抽象类即可，因为此抽象类里已经为我们注册了DeligatingFilterProxy。
+然后我们只需在配置类上加上注解@EnableWebSecurity，并让这个类继承WebSecurityConfigurerAdapter即可。我们可以通过重写configue方法来配置相关的安全配置。
+
+(p347)
+在Spring Boot环境中，开启Spring Security只需在配置类上加上@EnableWebSecurity注解，或者让配置类继承WebSecurityConfigurerAdapter类即可，而无需使用@EnableWebSecurity注解。
