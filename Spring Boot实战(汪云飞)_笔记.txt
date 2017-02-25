@@ -136,3 +136,5 @@ Spring Security配置(非Spring Boot环境)
 
 (p347)
 在Spring Boot环境中，开启Spring Security只需在配置类上加上@EnableWebSecurity注解，或者让配置类继承WebSecurityConfigurerAdapter类即可，而无需使用@EnableWebSecurity注解。
+
+test
